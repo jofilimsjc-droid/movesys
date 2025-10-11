@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ONECINEHUB - Your Ultimate Cinema Destination</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-red: #e50914;
+            --primary-red-hover: #f6121d;
+            --dark-bg: #0a0a0a;
+            --medium-bg: #141414;
+            --light-bg: #1f1f1f;
+            --text-light: #ffffff;
+            --text-gray: #b3b3b3;
+            --green: #46d369;
+            --selected-seat: #fbbf24;
+            --occupied-seat: #525252;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #e50914 0%, #ff6b6b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-section {
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        .hero-overlay {
+            background: linear-gradient(to right, rgba(10, 10, 10, 0.98) 0%, rgba(10, 10, 10, 0.85) 40%, rgba(10, 10, 10, 0.3) 70%, transparent 100%);
+        }
+        .movie-card, .client-movie-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: var(--medium-bg);
+        }
+        .movie-card:hover, .client-movie-card:hover {
+            transform: translateY(-12px) scale(1.03);
+            box-shadow: 0 20px 40px rgba(229, 9, 20, 0.4);
+            z-index: 10;
+        }
+        .movie-card img, .client-movie-card img {
+            transition: transform 0.4s ease;
+        }
+        .movie-card:hover img, .client-movie-card:hover img {
+            transform: scale(1.1);
+        }
+        .client-movie-card .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(10, 10, 10, 0.98) 0%, rgba(10, 10, 10, 0.8) 50%, transparent 100%);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            height: 100%;
+        }
+        .client-movie-card:hover .overlay {
+            opacity: 1;
+            visibility: visible;
+        }
+        .action-btn {
+            background: linear-gradient(135deg, var(--primary-red) 0%, #b20710 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 20px rgba(229, 9, 20, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(229, 9, 20, 0.6);
+        }
+        .action-btn:disabled {
+            background: linear-gradient(135deg, #555 0%, #333 100%);
+            cursor: not-allowed;
+            transform: translateY(0);
+            box-shadow: none;
+            opacity: 0.5;
+        }
+        .fav-icon {
+            color: #6b7280;
+            font-size: 1.75rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+        .fav-icon:hover {
+            color: var(--primary-red);
+            transform: scale(1.1);
+        }
+        .fav-icon.favorited {
+            color: var(--primary-red);
+            animation: heartBeat 0.3s ease;
+        }
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        .tab {
+            transition: all 0.3s ease;
+            position: relative;
+            padding-bottom: 12px;
+        }
+        .tab.active {
+            color: var(--text-light);
+        }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary-red), transparent);
+            border-radius: 2px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.92);
+            animation: fadeIn 0.3s;
+            backdrop-filter: blur(8px);
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-content {
+            background: linear-gradient(135deg, var(--medium-bg) 0%, var(--light-bg) 100%);
+            margin: 8% auto;
+            padding: 3rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 480px;
+            position: relative;
+            border: 1px solid rgba(229, 9, 20, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            animation: slideUp 0.4s ease;
+        }
+        .close-button {
+            color: var(--text-gray);
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .close-button:hover {
+            color: var(--text-light);
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: rotate(90deg);
+        }
+        .dashboard-header {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(229, 9, 20, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        .dashboard-nav a {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .dashboard-nav a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-red), #ff6b6b);
+            transition: width 0.3s ease;
+        }
+        .dashboard-nav a:hover::after,
+        .dashboard-nav a.active::after {
+            width: 100%;
+        }
+        .dashboard-nav a.active {
+            color: var(--text-light);
+            font-weight: 700;
+        }
+        .dashboard-sub-nav button {
+            transition: all 0.3s ease;
+        }
+        .dashboard-sub-nav button.active {
+            color: var(--text-light);
+            font-weight: 700;
+        }
+        .trailer-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+        }
+        .trailer-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .seat-map-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            overflow-x: auto;
+            padding: 1rem 0;
+        }
+        .seat-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .seat-row-label {
+            width: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: var(--text-gray);
+            font-size: 15px;
+        }
+        .seat {
+            width: 36px;
+            height: 36px;
+            font-size: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--green);
+            border-radius: 8px 8px 2px 2px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            color: white;
+            font-weight: 700;
+            flex-shrink: 0;
+            border: 2px solid transparent;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .seat:hover:not(.occupied):not(.aisle) {
+            transform: scale(1.15) translateY(-3px);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 6px 16px rgba(70, 211, 105, 0.4);
+        }
+        .seat.selected {
+            background-color: var(--selected-seat);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+            transform: scale(1.2) translateY(-4px);
+            border-color: var(--selected-seat);
+        }
+        .seat.occupied {
+            background-color: var(--occupied-seat);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .seat.aisle {
+            background-color: transparent;
+            cursor: default;
+            width: 24px;
+            box-shadow: none;
+        }
+        .seat-map-screen {
+            width: 75%;
+            max-width: 650px;
+            height: 12px;
+            background: linear-gradient(to bottom, #ffffff 0%, #d1d5db 50%, #9ca3af 100%);
+            margin: 0 auto 50px;
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+            box-shadow: 0 4px 30px rgba(255, 255, 255, 0.3), 0 0 60px rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+        .seat-map-screen::after {
+            content: 'SCREEN';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            color: var(--text-gray);
+        }
+        .notification-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: linear-gradient(135deg, var(--primary-red) 0%, #b20710 100%);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(229, 9, 20, 0.6);
+        }
+        .content-enter {
+            animation: slideUp 0.6s ease;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="tel"] {
+            background-color: var(--light-bg);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            transition: all 0.3s ease;
+        }
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="tel"]:focus {
+            outline: none;
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.1);
+        }
+        .glass-card {
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-now-showing {
+            background: linear-gradient(135deg, var(--primary-red) 0%, #b20710 100%);
+            box-shadow: 0 2px 10px rgba(229, 9, 20, 0.4);
+        }
+        .badge-coming-soon {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
+        }
+        @media (max-width: 640px) {
+            .seat { width: 30px; height: 30px; font-size: 8px; }
+            .seat-row-label { width: 28px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Guest View -->
+    <div id="guest-view">
+        <header class="fixed top-0 left-0 right-0 z-50 bg-transparent backdrop-blur-md transition-all duration-300" id="main-header">
+            <div class="container mx-auto px-6 md:px-10 py-5 flex justify-between items-center">
+                <h1 class="text-3xl md:text-4xl font-black gradient-text tracking-wider">ONECINEHUB</h1>
+                <div class="flex gap-3">
+                    <button id="loginBtn" class="text-white font-bold py-2.5 px-6 rounded-lg border-2 border-white/30 hover:bg-white hover:text-black transition-all duration-300">Sign In</button>
+                    <button id="registerBtn" class="action-btn">Create Account</button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section id="hero-section" class="hero-section min-h-screen flex items-center relative">
+                <div class="hero-overlay absolute inset-0"></div>
+                <div class="container mx-auto px-6 md:px-10 relative z-10">
+                    <div id="hero-content" class="max-w-2xl">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-gradient-to-b from-black/70 to-black py-20">
+                <div class="container mx-auto px-6 md:px-10">
+                    <div class="flex justify-center space-x-12 mb-16">
+                        <button id="showNowShowing" class="tab active text-3xl font-black">NOW SHOWING</button>
+                        <button id="showComingSoon" class="tab text-3xl font-black text-gray-500">COMING SOON</button>
+                    </div>
+
+                    <section id="now-showing-content-guest">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"></div>
+                    </section>
+
+                    <section id="coming-soon-content-guest" class="hidden">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"></div>
+                    </section>
+                </div>
+            </section>
+        </main>
+
+        <footer class="bg-black/90 border-t border-white/10 py-12">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-2xl font-black gradient-text mb-4">ONECINEHUB</h2>
+                <p class="text-gray-400 mb-6">&copy; 2024 ONECINEHUB. All rights reserved.</p>
+                <div class="flex justify-center space-x-8 text-2xl">
+                    <a href="#" class="text-gray-400 hover:text-red-500 transition-colors"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-red-500 transition-colors"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-red-500 transition-colors"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-red-500 transition-colors"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Dashboard View -->
+    <div id="client-dashboard" class="hidden"></div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeLogin">&times;</span>
+            <h2 class="text-3xl font-black mb-2 text-center gradient-text">Welcome Back</h2>
+            <p class="text-center text-gray-400 mb-8">Sign in to continue your journey</p>
+            <form>
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold mb-2 text-gray-300">Email or Username</label>
+                    <input class="w-full rounded-lg py-3 px-4" type="email" placeholder="Enter your email" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold mb-2 text-gray-300">Password</label>
+                    <input class="w-full rounded-lg py-3 px-4" type="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="action-btn w-full py-3 text-base">Sign In</button>
+            </form>
+            <p class="text-center text-gray-400 mt-6">New to ONECINEHUB? <a href="#" id="showRegisterFromLogin" class="text-red-500 font-bold hover:underline">Create an account</a></p>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeRegister">&times;</span>
+            <h2 class="text-3xl font-black mb-2 text-center gradient-text">Join Us</h2>
+            <p class="text-center text-gray-400 mb-8">Create your account today</p>
+            <form>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-2 text-gray-300">Username</label>
+                    <input class="w-full rounded-lg py-3 px-4" type="text" placeholder="Choose a username" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-2 text-gray-300">Email</label>
+                    <input class="w-full rounded-lg py-3 px-4" type="email" placeholder="Enter your email" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold mb-2 text-gray-300">Password</label>
+                    <input class="w-full rounded-lg py-3 px-4" type="password" placeholder="Create a password" required>
+                </div>
+                <button type="submit" class="action-btn w-full py-3 text-base">Create Account</button>
+            </form>
+            <p class="text-center text-gray-400 mt-6">Already have an account? <a href="#" id="showLoginFromRegister" class="text-red-500 font-bold hover:underline">Sign in here</a></p>
+        </div>
+    </div>
+
+    <!-- Notifications Panel -->
+    <div id="notifications-panel" class="hidden fixed top-20 right-6 glass-card w-80 sm:w-96 z-50 p-5 shadow-2xl">
+        <h3 class="font-black text-lg mb-4">Notifications</h3>
+        <ul id="notifications-list" class="space-y-3 max-h-96 overflow-y-auto"></ul>
+    </div>
+
+   <script>
+const { jsPDF } = window.jspdf;
+const mockMovies = {
+nowShowing: [
+{id: 1, img: 'heneralluna.png', title: 'Heneral Luna', genre: 'Historical, Drama', duration: '2h 18m', rating: 'R', synopsis: 'Ang kwento ng matapang at kontrobersyal na heneral na nagtatanggol sa pagkakaisa at kalayaan ng Pilipinas sa gitna ng intriga at politika.', cast: 'John Arcilla, Mon Confiado, JM de Guzman', trailer: 'https://youtu.be/WIc1VuKhjAI?si=txlMnNBbg5AXSdQm&t=2', banner: 'https://placehold.co/1920x1080/000000/8b0000?text=Heneral+Luna'},
+{id: 2, img: 'kitakita.png', title: 'Kita Kita', genre: 'Romance, Comedy, Drama', duration: '1h 54m', rating: 'PG-13', synopsis: 'Isang bulag na babae sa Sapporo at ang hindi inaasahang pagmamahal na nabuo niya sa isang lalaking nagpapanggap na nobyo—isang romantikong comedy-drama tungkol sa paghilom at pagtuklas ng sarili.', cast: 'Alessandra de Rossi, Empoy Marquez', trailer: 'https://www.youtube.com/embed/placeholder-kita-kita', banner: 'https://placehold.co/1920x1080/ff69b4/000000?text=Kita+Kita'},
+{id: 3, img: 'hellolove.png', title: 'Hello, Love, Goodbye', genre: 'Romance, Drama', duration: '1h 55m', rating: 'PG-13', synopsis: 'Kwento ng dalawang OFW sa Hong Kong na sinusubukan i-balanse ang pangarap, responsibilidad, at ang posibilidad ng pag-ibig sa kabila ng hirap.', cast: 'Kathryn Bernardo, Alden Richards', trailer: 'https://www.youtube.com/embed/placeholder-hlg', banner: 'https://placehold.co/1920x1080/1e90ff/ffffff?text=Hello+Love+Goodbye'},
+{id: 4, img: 'tadhana.png', title: 'That Thing Called Tadhana', genre: 'Romance, Indie', duration: '1h 45m', rating: 'PG', synopsis: 'Dalawang estranghero ang nagtagpo sa isang biyahe at nag-share ng kwento ng puso, pag-asa, at mga tanong tungkol sa tadhana at pag-ibig.', cast: 'Angelica Panganiban, JM de Guzman', trailer: 'https://www.youtube.com/embed/placeholder-ttct', banner: 'https://placehold.co/1920x1080/32cd32/000000?text=That+Thing+Called+Tadhana'},
+{id: 5, img: 'job.png', title: 'On the Job', genre: 'Crime, Thriller', duration: '2h 7m', rating: 'R', synopsis: 'Isang matinding pagsaliksik sa underground system kung saan ang mga preso ay ginagamit bilang bayarang mamamatay-tao, at ang mga epekto nito sa lipunan at hustisya.', cast: 'Joel Torre, Gerald Anderson, Joey Marquez', trailer: 'https://www.youtube.com/embed/placeholder-onthejob', banner: 'https://placehold.co/1920x1080/4b0082/ffffff?text=On+The+Job'},
+{id: 6, img: 'us.png', title: 'The Hows of Us', genre: 'Romance, Drama', duration: '2h 4m', rating: 'PG-13', synopsis: 'Isang matagal na relasyon ang nasusubok ng mga pangarap at personal na ambisyon—kwento ng pag-ibig, sakripisyo, at pagtuklas kung paano magpatuloy.', cast: 'Kathryn Bernardo, Daniel Padilla', trailer: 'https://www.youtube.com/embed/placeholder-thou', banner: 'https://placehold.co/1920x1080/ff8c00/000000?text=The+Hows+of+Us'}
+],
+comingSoon: [
+{id: 7, img: 'gomburza.png', title: 'GomBurZa', releaseDate: 'Nov 2024'},
+{id: 8, img: '1521.png', title: '1521: The Quest for Freedom', releaseDate: 'Dec 2024'},
+{id: 9, img: 'fly.png', title: 'Firefly', releaseDate: 'Jan 2025'}
+]
+        };
+        
+        let bookingHistory = [];
+        let favorites = [];
+        let notifications = [];
+        let bookingState = {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupModalControls();
+            setupGuestView();
+            setupScrollHeader();
+            
+            document.querySelector('#loginModal form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                loadClientDashboard();
+                document.getElementById('loginModal').style.display = 'none';
+            });
+            
+            document.querySelector('#registerModal form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                alert("Registration Successful! Please log in.");
+                document.getElementById('registerModal').style.display = 'none';
+                document.getElementById('loginModal').style.display = 'block';
+            });
+        });
+
+        function setupScrollHeader() {
+            const header = document.getElementById('main-header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 100) {
+                    header.style.backgroundColor = 'rgba(10, 10, 10, 0.95)';
+                } else {
+                    header.style.backgroundColor = 'transparent';
+                }
+            });
+        }
+
+        function setupModalControls() {
+            const modals = ['loginModal', 'registerModal'];
+            modals.forEach(id => {
+                const modal = document.getElementById(id);
+                document.getElementById(id.replace('Modal', 'Btn'))?.addEventListener('click', () => modal.style.display = 'block');
+                document.getElementById('close' + id.replace('Modal', ''))?.addEventListener('click', () => modal.style.display = 'none');
+            });
+            
+            window.onclick = (e) => {
+                modals.forEach(id => {
+                    if (e.target == document.getElementById(id)) {
+                        document.getElementById(id).style.display = 'none';
+                    }
+                });
+            };
+            
+            document.getElementById('showRegisterFromLogin').onclick = (e) => {
+                e.preventDefault();
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('registerModal').style.display = 'block';
+            };
+            
+            document.getElementById('showLoginFromRegister').onclick = (e) => {
+                e.preventDefault();
+                document.getElementById('registerModal').style.display = 'none';
+                document.getElementById('loginModal').style.display = 'block';
+            };
+        }
+
+        function setupGuestView() {
+            const featuredMovie = mockMovies.nowShowing[0];
+            document.getElementById('hero-section').style.backgroundImage = `url('${featuredMovie.banner}')`;
+            document.getElementById('hero-content').innerHTML = `
+                <span class="status-badge badge-now-showing mb-4">Now Showing</span>
+                <h2 class="text-5xl md:text-7xl font-black mb-6 leading-tight">${featuredMovie.title}</h2>
+                <div class="flex items-center gap-4 mb-6 text-lg">
+                    <span class="font-bold">${featuredMovie.genre}</span>
+                    <span class="text-gray-400">•</span>
+                    <span>${featuredMovie.duration}</span>
+                    <span class="border-2 border-white px-3 py-1 rounded font-bold">${featuredMovie.rating}</span>
+                </div>
+                <p class="text-xl mb-8 leading-relaxed text-gray-200">${featuredMovie.synopsis}</p>
+                <div class="flex gap-4">
+                    <button onclick="document.getElementById('loginBtn').click()" class="action-btn py-4 px-8 text-lg">
+                        <i class="fas fa-ticket-alt mr-2"></i> Get Tickets
+                    </button>
+                    <button class="bg-white/10 backdrop-blur-md text-white font-bold py-4 px-8 rounded-lg border-2 border-white/30 hover:bg-white/20 transition-all duration-300">
+                        <i class="fas fa-play mr-2"></i> Watch Trailer
+                    </button>
+                </div>
+            `;
+            
+            document.querySelector('#now-showing-content-guest div').innerHTML = mockMovies.nowShowing.map(m => `
+                <div class="movie-card group">
+                    <img src="${m.img}" alt="${m.title}" class="w-full h-auto aspect-[2/3] object-cover">
+                    <div class="absolute top-3 right-3">
+                        <span class="status-badge badge-now-showing">Now Showing</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.querySelector('#coming-soon-content-guest div').innerHTML = mockMovies.comingSoon.map(m => `
+                <div class="movie-card group">
+                    <img src="${m.img}" alt="${m.title}" class="w-full h-auto aspect-[2/3] object-cover">
+                    <div class="absolute top-3 right-3">
+                        <span class="status-badge badge-coming-soon">Coming Soon</span>
+                    </div>
+                    <div class="absolute bottom-3 left-3 bg-black/80 backdrop-blur-sm px-3 py-2 rounded-lg">
+                        <p class="text-xs font-bold text-gray-300">${m.releaseDate}</p>
+                    </div>
+                </div>
+            `).join('');
+            
+            const nowShowingBtn = document.getElementById('showNowShowing');
+            const comingSoonBtn = document.getElementById('showComingSoon');
+            
+            nowShowingBtn.addEventListener('click', () => {
+                document.getElementById('now-showing-content-guest').classList.remove('hidden');
+                document.getElementById('coming-soon-content-guest').classList.add('hidden');
+                nowShowingBtn.classList.add('active', 'text-white');
+                nowShowingBtn.classList.remove('text-gray-500');
+                comingSoonBtn.classList.remove('active', 'text-white');
+                comingSoonBtn.classList.add('text-gray-500');
+            });
+            
+            comingSoonBtn.addEventListener('click', () => {
+                document.getElementById('coming-soon-content-guest').classList.remove('hidden');
+                document.getElementById('now-showing-content-guest').classList.add('hidden');
+                comingSoonBtn.classList.add('active', 'text-white');
+                comingSoonBtn.classList.remove('text-gray-500');
+                nowShowingBtn.classList.remove('active', 'text-white');
+                nowShowingBtn.classList.add('text-gray-500');
+            });
+        }
+
+        function loadClientDashboard() {
+            document.getElementById('guest-view').style.display = 'none';
+            renderPage('booking');
+            addNotification("Welcome back to ONECINEHUB!");
+        }
+        
+        function renderPage(view, options = {}) {
+            document.getElementById('guest-view').style.display = 'none';
+            const dashboard = document.getElementById('client-dashboard');
+            dashboard.classList.remove('hidden');
+            
+            let mainContentHTML;
+            switch(view) {
+                case 'home':
+                    mainContentHTML = renderHomeView();
+                    break;
+                case 'booking':
+                    mainContentHTML = renderBookingView(options.tab || 'nowShowing');
+                    break;
+                case 'favorites':
+                    mainContentHTML = renderFavoritesView();
+                    break;
+                case 'history':
+                    mainContentHTML = renderHistoryView();
+                    break;
+                case 'details':
+                    mainContentHTML = renderMovieDetails(options.movieId);
+                    break;
+                case 'booking-process':
+                    mainContentHTML = renderBookingPage(options.step || 1);
+                    break;
+                default:
+                    mainContentHTML = renderBookingView();
+            }
+            
+            dashboard.innerHTML = `
+                <header class="dashboard-header sticky top-0 z-50">
+                    <div class="container mx-auto px-6 lg:px-10 flex items-center justify-between h-20">
+                        <div class="flex items-center gap-12">
+                            <h1 class="text-2xl md:text-3xl font-black gradient-text tracking-wider">ONECINEHUB</h1>
+                            <nav class="hidden md:flex items-center gap-10 text-sm font-bold dashboard-nav">
+                                <a data-view="home" class="${view === 'home' ? 'active' : 'text-gray-400'}">HOME</a>
+                                <a data-view="booking" class="${(view === 'booking' || view === 'details' || view === 'booking-process') ? 'active' : 'text-gray-400'}">MOVIES</a>
+                                <a data-view="history" class="${view === 'history' ? 'active' : 'text-gray-400'}">HISTORY</a>
+                                <a data-view="favorites" class="${view === 'favorites' ? 'active' : 'text-gray-400'}">FAVORITES</a>
+                            </nav>
+                        </div>
+                        <div class="flex items-center gap-6">
+                            <button id="notification-bell" class="text-gray-400 text-2xl hover:text-red-500 relative transition-colors">
+                                <i class="fas fa-bell"></i>
+                                <span id="notification-badge" class="notification-badge">${notifications.filter(n => !n.read).length}</span>
+                            </button>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center font-black text-lg">U</div>
+                                <span class="hidden sm:block text-sm font-bold">User</span>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <main id="dashboard-main-content" class="container mx-auto px-6 lg:px-10 py-10 content-enter min-h-screen">
+                    ${mainContentHTML}
+                </main>
+            `;
+            
+            addDashboardEventListeners();
+            updateNotificationBadge();
+        }
+
+        function addDashboardEventListeners() {
+            document.querySelectorAll('.dashboard-nav a').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    renderPage(e.target.dataset.view);
+                });
+            });
+            
+            document.getElementById('notification-bell').addEventListener('click', toggleNotifications);
+            
+            const mainContent = document.getElementById('dashboard-main-content');
+            if (mainContent) {
+                mainContent.addEventListener('click', (e) => {
+                    const target = e.target;
+                    const movieCard = target.closest('.client-movie-card');
+                    
+                    if (target.matches('#db-now-showing-btn')) {
+                        renderPage('booking', { tab: 'nowShowing' });
+                    } else if (target.matches('#db-coming-soon-btn')) {
+                        renderPage('booking', { tab: 'comingSoon' });
+                    } else if (target.closest('.buy-ticket-btn')) {
+                        e.stopPropagation();
+                        startBookingProcess(parseInt(movieCard.dataset.movieId));
+                    } else if (target.closest('.fav-icon')) {
+                        e.stopPropagation();
+                        toggleFavorite(parseInt(movieCard.dataset.movieId), target.closest('.fav-icon'));
+                    } else if (movieCard && movieCard.dataset.movieId) {
+                        const movieId = parseInt(movieCard.dataset.movieId);
+                        if (mockMovies.nowShowing.find(m => m.id === movieId)) {
+                            renderPage('details', { movieId: movieId });
+                        }
+                    }
+                });
+            }
+        }
+        
+        function renderHomeView() {
+            return `
+                <div class="text-center max-w-3xl mx-auto py-20">
+                    <h2 class="text-5xl font-black mb-6 gradient-text">Welcome to ONECINEHUB!</h2>
+                    <p class="text-xl text-gray-300 mb-10">Your one-stop destination for an unparalleled cinematic experience.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="glass-card p-8 text-center">
+                            <i class="fas fa-film text-5xl text-red-500 mb-4"></i>
+                            <h3 class="font-bold text-xl mb-2">Latest Movies</h3>
+                            <p class="text-gray-400">Watch blockbusters first</p>
+                        </div>
+                        <div class="glass-card p-8 text-center">
+                            <i class="fas fa-couch text-5xl text-red-500 mb-4"></i>
+                            <h3 class="font-bold text-xl mb-2">Premium Seats</h3>
+                            <p class="text-gray-400">Comfort redefined</p>
+                        </div>
+                        <div class="glass-card p-8 text-center">
+                            <i class="fas fa-ticket-alt text-5xl text-red-500 mb-4"></i>
+                            <h3 class="font-bold text-xl mb-2">Easy Booking</h3>
+                            <p class="text-gray-400">Book in seconds</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderHistoryView() {
+            if (bookingHistory.length === 0) {
+                return `
+                    <div class="text-center py-20">
+                        <i class="fas fa-history text-6xl text-gray-600 mb-6"></i>
+                        <h2 class="text-4xl font-black mb-4">My Booking History</h2>
+                        <p class="text-xl text-gray-400">You haven't booked any tickets yet.</p>
+                    </div>
+                `;
+            }
+            
+            const items = bookingHistory.map(item => `
+                <div class="glass-card p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 hover:border-red-500/30 transition-all">
+                    <img src="${item.movie.img}" class="w-24 h-36 object-cover rounded-lg shadow-lg" alt="${item.movie.title}">
+                    <div class="flex-grow">
+                        <h3 class="font-black text-2xl mb-2">${item.movie.title}</h3>
+                        <div class="space-y-1 text-gray-300">
+                            <p><i class="fas fa-map-marker-alt w-5 text-red-500"></i> ${item.branch}</p>
+                            <p><i class="fas fa-clock w-5 text-red-500"></i> ${item.time}</p>
+                            <p><i class="fas fa-chair w-5 text-red-500"></i> Seats: ${item.seats.join(', ')}</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-3 font-mono">Booking ID: ${item.txNumber}</p>
+                    </div>
+                    <button onclick="downloadTicketById('${item.txNumber}')" class="action-btn flex items-center gap-2 whitespace-nowrap">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            `).join('');
+            
+            return `
+                <h2 class="text-4xl font-black mb-8 gradient-text">My Booking History</h2>
+                <div class="space-y-6">${items}</div>
+            `;
+        }
+        
+        function renderFavoritesView() {
+            if (favorites.length === 0) {
+                return `
+                    <div class="text-center py-20">
+                        <i class="fas fa-heart text-6xl text-gray-600 mb-6"></i>
+                        <h2 class="text-4xl font-black mb-4">My Favorites</h2>
+                        <p class="text-xl text-gray-400">Use the <i class="fas fa-heart text-red-500"></i> icon on movies to add them to your favorites.</p>
+                    </div>
+                `;
+            }
+            
+            const favoritedMovies = mockMovies.nowShowing.filter(m => favorites.includes(m.id));
+            const cards = favoritedMovies.map(movie => createMovieCard(movie)).join('');
+            
+            return `
+                <h2 class="text-4xl font-black mb-8 gradient-text">My Favorites</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">${cards}</div>
+            `;
+        }
+        
+        function renderBookingView(activeTab) {
+            const nowShowing = mockMovies.nowShowing.map(movie => createMovieCard(movie)).join('');
+            const comingSoon = mockMovies.comingSoon.map(movie => `
+                <div class="client-movie-card" data-movie-id="${movie.id}">
+                    <img src="${movie.img}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover">
+                    <div class="absolute top-3 right-3">
+                        <span class="status-badge badge-coming-soon">Coming Soon</span>
+                    </div>
+                    <div class="absolute bottom-3 left-3 bg-black/80 backdrop-blur-sm px-3 py-2 rounded-lg">
+                        <p class="text-xs font-bold">${movie.releaseDate}</p>
+                    </div>
+                </div>
+            `).join('');
+            
+            return `
+                <div class="flex flex-col md:flex-row justify-between items-center mb-10">
+                    <h2 class="text-4xl font-black gradient-text mb-6 md:mb-0">Browse Movies</h2>
+                    <nav class="flex items-center gap-8 text-lg font-black dashboard-sub-nav">
+                        <button id="db-now-showing-btn" class="${activeTab === 'nowShowing' ? 'active text-white' : 'text-gray-500'}">NOW SHOWING</button>
+                        <button id="db-coming-soon-btn" class="${activeTab === 'comingSoon' ? 'active text-white' : 'text-gray-500'}">COMING SOON</button>
+                    </nav>
+                </div>
+                
+                <section id="db-now-showing-content" class="${activeTab === 'nowShowing' ? '' : 'hidden'}">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">${nowShowing}</div>
+                </section>
+                
+                <section id="db-coming-soon-content" class="${activeTab === 'comingSoon' ? '' : 'hidden'}">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">${comingSoon}</div>
+                </section>
+            `;
+        }
+        
+        function renderMovieDetails(movieId) {
+            const movie = mockMovies.nowShowing.find(m => m.id == movieId);
+            if (!movie) return `<p>Movie not found.</p>`;
+            
+            const isFavorited = favorites.includes(movie.id);
+            
+            return `
+                <button onclick="renderPage('booking')" class="mb-8 text-gray-300 hover:text-white transition-colors flex items-center gap-2 text-lg font-bold">
+                    <i class="fas fa-arrow-left"></i> Back to Movies
+                </button>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                    <div class="lg:col-span-1">
+                        <img src="${movie.img}" alt="${movie.title}" class="rounded-xl w-full shadow-2xl aspect-[2/3] object-cover border-4 border-white/10">
+                    </div>
+                    
+                    <div class="lg:col-span-2">
+                        <div class="flex items-start gap-6 mb-4">
+                            <h2 class="text-5xl lg:text-6xl font-black flex-grow leading-tight">${movie.title}</h2>
+                            <i onclick="toggleFavorite(${movie.id}, this)" class="fas fa-heart fav-icon ${isFavorited ? 'favorited' : ''} flex-shrink-0 mt-2"></i>
+                        </div>
+                        
+                        <div class="flex items-center flex-wrap gap-4 mb-6">
+                            <span class="text-lg font-bold text-gray-300">${movie.genre}</span>
+                            <span class="text-gray-600">•</span>
+                            <span class="text-lg font-bold text-gray-300">${movie.duration}</span>
+                            <span class="text-gray-600">•</span>
+                            <span class="border-2 border-red-500 px-4 py-1 rounded-lg font-black text-red-500">${movie.rating}</span>
+                        </div>
+                        
+                        <div class="glass-card p-6 mb-6">
+                            <h3 class="text-2xl font-black mb-3 text-red-500">Synopsis</h3>
+                            <p class="text-lg leading-relaxed text-gray-300">${movie.synopsis}</p>
+                        </div>
+                        
+                        <div class="glass-card p-6 mb-6">
+                            <h3 class="text-2xl font-black mb-3 text-red-500">Cast</h3>
+                            <p class="text-lg text-gray-300">${movie.cast}</p>
+                        </div>
+                        
+                        <div class="trailer-container mb-8">
+                            <iframe src="${movie.trailer}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        
+                        <button onclick="startBookingProcess(${movie.id})" class="action-btn w-full text-xl py-5">
+                            <i class="fas fa-ticket-alt mr-3"></i> Book Tickets Now
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createMovieCard(movie) {
+            const isFavorited = favorites.includes(movie.id);
+            return `
+                <div class="client-movie-card" data-movie-id="${movie.id}">
+                    <img src="${movie.img}" alt="${movie.title}" class="w-full h-auto aspect-[2/3] object-cover">
+                    <div class="overlay">
+                        <h4 class="font-black text-xl mb-3">${movie.title}</h4>
+                        <p class="text-sm text-gray-300 mb-4">${movie.genre} • ${movie.duration}</p>
+                        <div class="flex justify-between items-center w-full gap-3">
+                            <button class="buy-ticket-btn action-btn !text-sm !py-2 !px-4 flex-grow">
+                                <i class="fas fa-ticket-alt mr-2"></i> Buy Ticket
+                            </button>
+                            <i class="fas fa-heart fav-icon ${isFavorited ? 'favorited' : ''} !text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function toggleFavorite(movieId, iconElement) {
+            if (favorites.includes(movieId)) {
+                favorites = favorites.filter(id => id !== movieId);
+                iconElement.classList.remove('favorited');
+                addNotification("Removed from favorites");
+            } else {
+                favorites.push(movieId);
+                iconElement.classList.add('favorited');
+                addNotification("Added to favorites!");
+            }
+        }
+
+        function startBookingProcess(movieId) {
+            bookingState = {
+                movieId: movieId,
+                movie: mockMovies.nowShowing.find(m => m.id == movieId),
+                seats: []
+            };
+            renderPage('booking-process', { step: 1 });
+        }
+        
+        function renderBookingProcessHeader() {
+            const { movie, branch, date, time } = bookingState;
+            return `
+                <div class="glass-card p-6 flex items-center gap-6 mb-10 border-l-4 border-red-500">
+                    <img src="${movie.img}" alt="${movie.title}" class="w-20 h-30 object-cover rounded-lg shadow-lg hidden sm:block">
+                    <div>
+                        <h2 class="text-2xl font-black mb-1">${movie.title}</h2>
+                        ${branch ? `<p class="text-gray-300"><i class="fas fa-map-marker-alt text-red-500 mr-2"></i>${branch}${date ? ` | ${new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : ''}${time ? ` at ${time}` : ''}</p>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBookingPage(step) {
+            let content = '';
+            let header = step > 1 ? renderBookingProcessHeader() : '';
+            
+            switch(step) {
+                case 1: // Select Cinema
+                    content = `
+                        <h2 class="text-4xl font-black mb-8 gradient-text">Select Cinema Location</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            ${['SM Manila', 'Robinsons Place Manila', 'Greenbelt Makati', 'SM Megamall', 'SM North EDSA', 'Trinoma'].map(loc => `
+                                <button onclick="handleBookingStep(1, {'branch': 'ONECINEHUB ${loc}'})" class="glass-card p-8 text-left hover:border-red-500/50 transition-all group">
+                                    <div class="flex items-center gap-4 mb-4">
+                                        <div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center text-2xl group-hover:bg-red-500/40 transition-all">
+                                            <i class="fas fa-map-marker-alt text-red-500"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-black text-xl">ONECINEHUB ${loc}</h3>
+                                            <p class="text-sm text-gray-400">${loc}</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-500">Premium halls • Dolby Atmos • Recliner seats</p>
+                                </button>
+                            `).join('')}
+                        </div>
+                    `;
+                    break;
+                    
+                case 2: // Select Showtime
+                    const dates = Array.from({ length: 7 }, (_, i) => {
+                        const date = new Date();
+                        date.setDate(date.getDate() + i);
+                        return date;
+                    });
+                    
+                    content = `
+                        <button onclick="renderPage('booking-process', {step: 1})" class="mb-8 text-gray-300 hover:text-white transition-colors flex items-center gap-2 text-lg font-bold">
+                            <i class="fas fa-arrow-left"></i> Back to Cinemas
+                        </button>
+                        ${header}
+                        
+                        <h2 class="text-3xl font-black mb-6">Select Date</h2>
+                        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3 mb-10">
+                            ${dates.map((d, i) => `
+                                <button onclick="handleDateSelect(this, '${d.toDateString()}')" 
+                                    class="date-btn glass-card p-4 text-center ${i === 0 ? 'border-red-500 border-2' : ''} hover:border-red-500/50 transition-all" 
+                                    data-date="${d.toDateString()}">
+                                    <p class="text-xs text-gray-400 uppercase mb-1">${d.toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                                    <p class="text-2xl font-black">${d.getDate()}</p>
+                                    <p class="text-xs text-gray-400">${d.toLocaleDateString('en-US', { month: 'short' })}</p>
+                                </button>
+                            `).join('')}
+                        </div>
+                        
+                        <h2 class="text-3xl font-black mb-6">Select Time</h2>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            ${['10:00 AM', '1:00 PM', '3:30 PM', '6:00 PM', '8:30 PM', '10:00 PM'].map(t => `
+                                <button onclick="handleBookingStep(2, {'time': '${t}'})" class="glass-card p-6 text-center hover:border-red-500/50 transition-all group">
+                                    <i class="fas fa-clock text-2xl text-red-500 mb-2 group-hover:scale-110 transition-transform"></i>
+                                    <p class="font-black text-xl">${t}</p>
+                                    <p class="text-xs text-gray-400 mt-1">Hall 1</p>
+                                </button>
+                            `).join('')}
+                        </div>
+                    `;
+                    bookingState.date = dates[0].toDateString();
+                    break;
+                    
+                case 3: // Seat Selection
+                    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+                    const seatRows = rows.map(row => {
+                        let rowSeats = [];
+                        for (let i = 1; i <= 14; i++) {
+                            const seatId = `${row}${i}`;
+                            const isOccupied = Math.random() < 0.2;
+                            rowSeats.push(`<div class="seat ${isOccupied ? 'occupied' : ''}" data-seat="${seatId}" ${isOccupied ? '' : `onclick="toggleSeat(this)"`}>${seatId}</div>`);
+                            if (i === 3 || i === 11) rowSeats.push('<div class="seat aisle"></div>');
+                        }
+                        return `<div class="seat-row"><div class="seat-row-label">${row}</div>${rowSeats.join('')}<div class="seat-row-label">${row}</div></div>`;
+                    }).join('');
+                    
+                    content = `
+                        <button onclick="renderPage('booking-process', {step: 2})" class="mb-8 text-gray-300 hover:text-white transition-colors flex items-center gap-2 text-lg font-bold">
+                            <i class="fas fa-arrow-left"></i> Back to Showtimes
+                        </button>
+                        ${header}
+                        
+                        <div class="glass-card p-6 sm:p-8 lg:p-10">
+                            <div class="seat-map-screen"></div>
+                            <div class="seat-map-container mb-10">${seatRows}</div>
+                            
+                            <div class="border-t border-white/10 pt-8">
+                                <div class="flex items-center justify-center flex-wrap gap-8 text-sm mb-8">
+                                    <span class="flex items-center gap-3">
+                                        <div class="w-6 h-6 rounded-lg" style="background-color: var(--green);"></div>
+                                        <span class="font-bold">Available</span>
+                                    </span>
+                                    <span class="flex items-center gap-3">
+                                        <div class="w-6 h-6 rounded-lg" style="background-color: var(--selected-seat);"></div>
+                                        <span class="font-bold">Selected</span>
+                                    </span>
+                                    <span class="flex items-center gap-3">
+                                        <div class="w-6 h-6 rounded-lg" style="background-color: var(--occupied-seat);"></div>
+                                        <span class="font-bold">Reserved</span>
+                                    </span>
+                                </div>
+                                
+                                <div class="bg-dark-bg rounded-xl p-6 flex flex-wrap justify-between items-center gap-6">
+                                    <div class="flex items-center gap-10 flex-wrap">
+                                        <div>
+                                            <p class="text-gray-400 text-xs uppercase mb-2 font-bold">Your Selection</p>
+                                            <p id="seat-selection-summary" class="font-black text-2xl">None</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-gray-400 text-xs uppercase mb-2 font-bold">Total Price</p>
+                                            <p id="seat-price-summary" class="font-black text-3xl text-red-500">₱0.00</p>
+                                        </div>
+                                    </div>
+                                    <button id="proceed-to-payment-btn" class="action-btn px-10 py-4 text-lg whitespace-nowrap" disabled onclick="handleBookingStep(3)">
+                                        Proceed to Payment
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 4: // Payment
+                    content = `
+                        <button onclick="renderPage('booking-process', {step: 3})" class="mb-8 text-gray-300 hover:text-white transition-colors flex items-center gap-2 text-lg font-bold">
+                            <i class="fas fa-arrow-left"></i> Back to Seat Selection
+                        </button>
+                        ${header}
+                        
+                        <div class="glass-card p-8 sm:p-10">
+                            <h2 class="text-4xl font-black mb-10 text-center gradient-text">Payment</h2>
+                            
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                                <div>
+                                    <h3 class="font-black text-2xl mb-6 pb-4 border-b border-white/10">Booking Summary</h3>
+                                    <div class="space-y-5 text-base">
+                                        <div class="flex items-start gap-4">
+                                            <i class="fas fa-film text-red-500 text-xl w-6"></i>
+                                            <div>
+                                                <p class="text-gray-400 text-sm mb-1">Movie</p>
+                                                <p class="font-bold text-lg">${bookingState.movie.title}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-start gap-4">
+                                            <i class="fas fa-map-marker-alt text-red-500 text-xl w-6"></i>
+                                            <div>
+                                                <p class="text-gray-400 text-sm mb-1">Cinema</p>
+                                                <p class="font-bold text-lg">${bookingState.branch}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-start gap-4">
+                                            <i class="fas fa-calendar-alt text-red-500 text-xl w-6"></i>
+                                            <div>
+                                                <p class="text-gray-400 text-sm mb-1">Date & Time</p>
+                                                <p class="font-bold text-lg">${new Date(bookingState.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                                                <p class="text-gray-300">${bookingState.time}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-start gap-4">
+                                            <i class="fas fa-chair text-red-500 text-xl w-6"></i>
+                                            <div>
+                                                <p class="text-gray-400 text-sm mb-1">Seats</p>
+                                                <p class="font-mono bg-dark-bg px-4 py-2 rounded-lg text-lg font-bold">${bookingState.seats.join(', ')}</p>
+                                            </div>
+                                        </div>
+                                        <hr class="border-white/10 my-6">
+                                        <div class="flex justify-between items-center text-2xl">
+                                            <span class="font-black">Total:</span>
+                                            <span class="text-red-500 font-black">₱${bookingState.totalPrice.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h3 class="font-black text-2xl mb-6 pb-4 border-b border-white/10">Payment Method</h3>
+                                    <div class="space-y-4 mb-8">
+                                        ${['GCash', 'PayMaya', 'Credit/Debit Card'].map(m => `
+                                            <button class="payment-method-btn w-full text-left p-5 glass-card border-2 border-transparent hover:border-red-500/50 transition-all flex items-center gap-4 group" 
+                                                data-method="${m}" onclick="showPaymentForm('${m}', this)">
+                                                <div class="w-12 h-12 bg-gradient-to-br from-red-500/20 to-red-700/20 rounded-lg flex items-center justify-center group-hover:from-red-500/30 group-hover:to-red-700/30 transition-all">
+                                                    <i class="fas ${m === 'GCash' ? 'fa-mobile-alt' : m === 'PayMaya' ? 'fa-wallet' : 'fa-credit-card'} text-red-500 text-xl"></i>
+                                                </div>
+                                                <span class="font-black text-lg">${m}</span>
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                    <div id="payment-form-container"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 5: // Confirmation
+                    const txNumber = `OHC-${Date.now()}`;
+                    bookingState.txNumber = txNumber;
+                    bookingHistory.push({...bookingState});
+                    addNotification(`Ticket for ${bookingState.movie.title} confirmed!`);
+                    
+                    content = `
+                        <div class="max-w-2xl mx-auto text-center">
+                            <div class="mb-8">
+                                <div class="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <i class="fas fa-check-circle text-6xl text-green-500"></i>
+                                </div>
+                                <h2 class="text-5xl font-black mb-4 gradient-text">Booking Successful!</h2>
+                                <p class="text-xl text-gray-400">Your e-ticket is ready</p>
+                            </div>
+                            
+                            <div class="glass-card p-8 text-left mb-8">
+                                <div class="flex items-center gap-6 mb-6 pb-6 border-b border-white/10">
+                                    <img src="${bookingState.movie.img}" class="w-20 h-30 object-cover rounded-lg shadow-lg">
+                                    <div>
+                                        <h3 class="font-black text-2xl mb-1">${bookingState.movie.title}</h3>
+                                        <p class="text-gray-400">${bookingState.branch}</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-3 mb-6">
+                                    <p class="flex justify-between"><span class="text-gray-400">Date:</span><span class="font-bold">${new Date(bookingState.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span></p>
+                                    <p class="flex justify-between"><span class="text-gray-400">Time:</span><span class="font-bold">${bookingState.time}</span></p>
+                                    <p class="flex justify-between"><span class="text-gray-400">Seats:</span><span class="font-bold font-mono">${bookingState.seats.join(', ')}</span></p>
+                                    <p class="flex justify-between"><span class="text-gray-400">Total Paid:</span><span class="font-bold text-red-500">₱${bookingState.totalPrice.toFixed(2)}</span></p>
+                                </div>
+                                
+                                <div class="bg-dark-bg rounded-lg p-6 text-center">
+                                    <p class="text-gray-400 text-sm mb-2 uppercase font-bold tracking-wider">Booking ID</p>
+                                    <p class="font-mono text-3xl font-black bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">${txNumber}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                                <button onclick="renderPage('booking')" class="action-btn bg-gray-700 hover:bg-gray-600 px-8 py-4 text-lg">
+                                    <i class="fas fa-home mr-2"></i> Back to Home
+                                </button>
+                                <button onclick="downloadTicketById('${txNumber}')" class="action-btn px-8 py-4 text-lg">
+                                    <i class="fas fa-download mr-2"></i> Download Ticket
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    bookingState = {};
+                    break;
+            }
+            
+            return content;
+        }
+        
+        function handleBookingStep(currentStep, data) {
+            Object.assign(bookingState, data);
+            renderPage('booking-process', { step: currentStep + 1 });
+        }
+        
+        function handleDateSelect(button, dateString) {
+            document.querySelectorAll('.date-btn').forEach(btn => {
+                btn.classList.remove('border-red-500', 'border-2');
+            });
+            button.classList.add('border-red-500', 'border-2');
+            bookingState.date = dateString;
+        }
+        
+        function toggleSeat(seatElement) {
+            if (seatElement.classList.contains('occupied') || seatElement.classList.contains('aisle')) return;
+            
+            seatElement.classList.toggle('selected');
+            const seatId = seatElement.dataset.seat;
+            
+            if (bookingState.seats.includes(seatId)) {
+                bookingState.seats = bookingState.seats.filter(s => s !== seatId);
+            } else {
+                bookingState.seats.push(seatId);
+            }
+            
+            updateSeatSummary();
+        }
+        
+        function updateSeatSummary() {
+            const selectionSummaryEl = document.getElementById('seat-selection-summary');
+            const priceSummaryEl = document.getElementById('seat-price-summary');
+            const proceedBtn = document.getElementById('proceed-to-payment-btn');
+            const seatCount = bookingState.seats.length;
+
+            if (seatCount === 0) {
+                selectionSummaryEl.textContent = 'None';
+                priceSummaryEl.textContent = '₱0.00';
+                proceedBtn.disabled = true;
+            } else {
+                const price = 350;
+                bookingState.totalPrice = seatCount * price;
+                const sortedSeats = bookingState.seats.sort();
+                selectionSummaryEl.textContent = sortedSeats.join(', ');
+                priceSummaryEl.textContent = `₱${bookingState.totalPrice.toFixed(2)}`;
+                proceedBtn.disabled = false;
+            }
+        }
+        
+        function showPaymentForm(method, buttonElement) {
+            document.querySelectorAll('.payment-method-btn').forEach(btn => {
+                btn.classList.remove('border-red-500', 'border-2');
+            });
+            buttonElement.classList.add('border-red-500', 'border-2');
+            
+            const container = document.getElementById('payment-form-container');
+            bookingState.paymentMethod = method;
+            
+            let form = '';
+            if (method === 'GCash' || method === 'PayMaya') {
+                form = `
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-2">${method} Number</label>
+                            <input type="tel" placeholder="09XX XXX XXXX" 
+                                class="w-full bg-light-bg border-2 border-white/10 p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                        </div>
+                    </div>
+                `;
+            } else {
+                form = `
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-2">Card Number</label>
+                            <input type="text" placeholder="1234 5678 9012 3456" 
+                                class="w-full bg-light-bg border-2 border-white/10 p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-2">Expiry (MM/YY)</label>
+                                <input type="text" placeholder="MM/YY" 
+                                    class="w-full bg-light-bg border-2 border-white/10 p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-2">CVV</label>
+                                <input type="text" placeholder="123" 
+                                    class="w-full bg-light-bg border-2 border-white/10 p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = form + `
+                <button onclick="handleBookingStep(4)" class="action-btn w-full mt-6 py-4 text-lg">
+                    <i class="fas fa-check-circle mr-2"></i> Confirm Payment
+                </button>
+            `;
+        }
+
+        function downloadTicketById(txNumber) {
+            const bookingData = bookingHistory.find(b => b.txNumber === txNumber);
+            if (!bookingData) {
+                console.error("Booking not found!");
+                return;
+            }
+
+            const doc = new jsPDF();
+            const { movie, branch, date, time, seats, totalPrice } = bookingData;
+            
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(26);
+            doc.setTextColor(229, 9, 20);
+            doc.text("ONECINEHUB E-TICKET", 105, 20, null, null, 'center');
+            
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Booking ID: ${txNumber}`, 105, 28, null, null, 'center');
+            
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(229, 9, 20);
+            doc.line(20, 35, 190, 35);
+            
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.setTextColor(0);
+            doc.text(movie.title, 20, 50);
+            
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            doc.setTextColor(60);
+            doc.text(`Cinema: ${branch}`, 20, 65);
+            doc.text(`Date: ${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`, 20, 75);
+            doc.text(`Showtime: ${time}`, 20, 85);
+            doc.text(`Seats: ${seats.join(', ')}`, 20, 95);
+            doc.text(`Total Price: PHP ${totalPrice.toFixed(2)}`, 20, 105);
+            
+            doc.setLineWidth(0.3);
+            doc.setDrawColor(200);
+            doc.line(20, 115, 190, 115);
+            
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(9);
+            doc.setTextColor(120);
+            doc.text('Present this ticket at the cinema entrance', 105, 125, null, null, 'center');
+            doc.text('Thank you for choosing ONECINEHUB!', 105, 132, null, null, 'center');
+            
+            doc.save(`ONECINEHUB-Ticket-${txNumber}.pdf`);
+        }
+
+        function addNotification(message) {
+            notifications.unshift({ message, date: new Date(), read: false });
+            if (notifications.length > 10) notifications.pop();
+            updateNotificationBadge();
+        }
+        
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notification-badge');
+            if (badge) {
+                const newNotifs = notifications.filter(n => !n.read).length;
+                if (newNotifs > 0) {
+                    badge.style.display = 'flex';
+                    badge.textContent = newNotifs;
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+        
+        function toggleNotifications() {
+            const panel = document.getElementById('notifications-panel');
+            panel.classList.toggle('hidden');
+            
+            if (!panel.classList.contains('hidden')) {
+                const list = document.getElementById('notifications-list');
+                if (notifications.length > 0) {
+                    list.innerHTML = notifications.map((n, i) => `
+                        <li class="text-sm pb-3 ${i !== notifications.length - 1 ? 'border-b border-white/10' : ''}">
+                            <p class="font-bold mb-1">${n.message}</p>
+                            <p class="text-xs text-gray-400">${new Date(n.date).toLocaleString()}</p>
+                        </li>
+                    `).join('');
+                } else {
+                    list.innerHTML = `<li class="text-gray-400 text-sm text-center py-4">No new notifications.</li>`;
+                }
+                notifications.forEach(n => n.read = true);
+                updateNotificationBadge();
+            }
+        }
+        
+        // Close notifications when clicking outside
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('notifications-panel');
+            const bell = document.getElementById('notification-bell');
+            if (panel && bell && !panel.contains(e.target) && !bell.contains(e.target)) {
+                panel.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
